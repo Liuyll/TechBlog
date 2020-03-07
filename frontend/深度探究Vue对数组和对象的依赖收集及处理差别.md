@@ -3,11 +3,16 @@
 关键代码：
 
 ```javascript
- if (Dep.target) {
+// defineReactive get()
+if (Dep.target) {
    dep.depend()
    if (childOb) {
+     // 这个dep直接给watcher，object/array 都会传该dep
      childOb.dep.depend()
      if (Array.isArray(value)) {
+       // 这是第二个dep，array独有，对每个数组元素都向watcher发送了dep
+       // 为了给数组的每一项都为对应的watcher发送dep，
+       // 考虑以下情况：Vue.$set(this.books[0],key,value)
        dependArray(value)
      }
    }
@@ -123,11 +128,38 @@ ps:事实上，如果把数组改为object的响应方法，也能做到不用$s
 不过很快，我们就翻到了$set的源码(observer/index function set)关于array部分的处理
 
 ```javascript
- if (Array.isArray(target) && isValidArrayIndex(key)) {
+ export function set (target: Array<any> | Object, key: any, val: any): any {
+  if (process.env.NODE_ENV !== 'production' &&
+    (isUndef(target) || isPrimitive(target))
+  ) {
+    warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
+  }
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     target.splice(key, 1, val)
     return val
   }
+  if (key in target && !(key in Object.prototype)) {
+    target[key] = val
+    return val
+  }
+  const ob = (target: any).__ob__
+  if (target._isVue || (ob && ob.vmCount)) {
+    process.env.NODE_ENV !== 'production' && warn(
+      'Avoid adding reactive properties to a Vue instance or its root $data ' +
+      'at runtime - declare it upfront in the data option.'
+    )
+    return val
+  }
+  if (!ob) {
+    target[key] = val
+    return val
+  }
+  defineReactive(ob.value, key, val)
+  // 通知数组的watcher求值，这个watcher是dependArray打上的第二层watcher
+  ob.dep.notify()
+  return val
+}
 ```
 
 以及 array monkey patch
@@ -151,7 +183,7 @@ methodsToPatch.forEach(function (method) {
         break
     }
     if (inserted) ob.observeArray(inserted)
-    // notify change
+    // notify change 
     ob.dep.notify()
     return result
   })
@@ -160,7 +192,30 @@ methodsToPatch.forEach(function (method) {
 
 so，你看到什么了吗？
 
-<b>两个dep只是为了set方法做准备的，set一旦触发，立马对新的对象做依赖收集，并且触发老array的观察者更新，如果没有子watcher，那set就不能嵌套更新数组了</b>
+<b>两个dep只是为了set方法做准备的，set一旦触发，立马对新的对象做依赖收集，并且触发老array的观察者更新，如果没有子watcher，那set就不能嵌套更新数组里的对象元素了</b>
+
+
+
+### 说人话！！！
+
+好的，让我用通俗易懂的方法来解释一下。
+
+1. dependArray把数组里面所有对象元素递归的收集起来，并且把自身作为依赖添加进他们的__ob__里面
+
+2. set只patch了一件事，在更新后通知所有的sub更新了，这时通过dependArray找到的那些对象都被通知到了。
+
+3. 我们看一下vue里对象的样子
+
+   ```
+   {
+   	a:1,
+   	b:{
+   		__ob__:{dep...}
+   		a:1
+   	},
+   	__ob__:{dep...}
+   }
+   ```
 
 
 
