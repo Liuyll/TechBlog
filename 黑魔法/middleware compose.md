@@ -28,6 +28,19 @@ function compose(middlewares:middleware[],ctx:Ctx):Promise<any>{
 const compose = middlewares.reduceRight((a,b) => (...args) => b(a(...args)))
 ```
 
+​	compose实际上把所有函数串联起来形成一个函数(值是第一个函数的curry化)
+
+```javascript
+before compose:
+M1: next => action => {}
+
+after compose:
+M1: action => {} 
+// next已经被传入
+```
+
+
+
 + 看一段redux的applyMiddleware
 
   先Review一下middleware的写法
@@ -50,6 +63,53 @@ const compose = middlewares.reduceRight((a,b) => (...args) => b(a(...args)))
   
   
   ```
+
+
+
+
+
+#### next
+
+```javascript
+// case1 此时dispatch返回值由next接管
+let M1 = state => next => action => {
+    console.log('i am M1')
+    next(action)
+    return 10
+}
+
+// case2 此时dispatch返回值由M1决定
+let M1 = state => next => action => {
+    console.log('i am M1')
+    return next(action)
+    return 10
+}
+```
+
+
+
+### 看下redux-thunk
+
+用法很简单
+
+```javascript
+(args) => async (dispatch,getState) => {
+	return await fetch(args).then(data => dispatch(data))
+}
+```
+
+中间件也很简单
+
+```
+const thunkMiddleware = store => next => action => {
+	if(action is Function) {
+		return action(store.dispatch,store.getState)
+	}
+	next(action)
+}
+```
+
+
 
 ### koa呢？
 

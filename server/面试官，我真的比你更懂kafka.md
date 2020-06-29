@@ -116,24 +116,7 @@ log.dir=/usr/etc/logs/kafka/kafka-1-logs...kafka-n-logs
 
 ## Consumer
 
-先让我们聊聊，consumer把消息藏在哪里了？
-
-```
---zookeeper or --bootstrap-server
-# zookeeper把消息存在zookeeper里，而后者把消息存在kafka里
-# 新版kafka已经不支持--zookeeper了
-```
-
-#### 消费组
-
-我个人认为，这是consumer最重要的概念。它跟partition完成了kafka的横向扩展，让负载均衡变得简单。
-
-一些常识必须要先了解：
-
-- 同一个消费组的成员不能消费同一个partition
-- 一个消费者最多对应一个partition
-- 不同消费组可以消费同一个partition
-- 同一个消费组应该是同样逻辑的service
+一个Consumer需要连接到某个`Broker`上，通过broker储存的`metadata`就能进行消费了。
 
 
 
@@ -141,7 +124,13 @@ log.dir=/usr/etc/logs/kafka/kafka-1-logs...kafka-n-logs
 
 ## Producer
 
-***Of Course 有Consumer也就有Producer啦***
+#### 消息是怎么发送到其他broker的
+
+![image-20200621110413888](/Users/liuyl/Library/Application Support/typora-user-images/image-20200621110413888.png)
+
+实际上，producer是一个`ProcuderRecord`类，它会发送消息到对应的broker。broker储存有集群其他节点的`metadata`信息，通过这个`metadata`，消息可以发送到每个集群。
+
+
 
 事实上，producer也采取和consumer一致的leader写入，follow备份的策略
 
@@ -164,16 +153,11 @@ partitionerType: 2
 
 ## Zookeeper
 
-***这可是kafka最重要的东西啦！***
+简单的来说，zookeeper储存了一堆`metadata`，它可以看做一个`coordinator`。
 
----
+一旦某个broker挂掉，都会被预先注册在zookeeper里的`watcher`监听到，并触发`rebalance`
+
+![image-20200621112256598](/Users/liuyl/Desktop/img-cache/image-20200621112256598.png)
 
 
-
-我们先看看zookeeper在背后为我们做了什么？
-
-- 注册topics时，它记录了topic
-- 注册producer时，它记录了producer
-- 注册consumer时，它同样记录了consumer
-- leader歇菜时，它发挥了重要作用
 

@@ -1,5 +1,7 @@
 ## Performance
 
+### 一些关键选修开启步骤
+
 #### layers panel
 
 1. 点击设置按钮,打开`capture setting`
@@ -31,3 +33,25 @@
 #### force gc
 
 1. 点击memory 旁边的垃圾箱
+
+
+
+### 几个性能指标
+
+> full performance report tools: lighthouse
+
++ FP (first print)
++ DCL
++ L
++ LCP (largest contentful print)
++ TBT (total blocking time)
++ TTI (time to interactive)
++ FMP (first meanful paint) 首次有效绘制
+
+[参考](https://blog.csdn.net/c_kite/article/details/104237256)
+
+
+
+### 使用参考
+
+[performance usage](http://jartto.wang/2017/08/28/how-to-optimize-marker-of-AMap/)

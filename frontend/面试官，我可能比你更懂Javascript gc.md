@@ -85,34 +85,62 @@ cheney的大致过程如下：
 
 接下里是重头戏，我们看看cheney是怎么实现的？
 
+###### 概念：
+
++ field区
+
+考虑以下代码:
+
+![image-20200620100610384](/Users/liuyl/Library/Application Support/typora-user-images/image-20200620100610384.png)
+
+生成出来的空间如下：
+
+![image-20200620100630340](/Users/liuyl/Library/Application Support/typora-user-images/image-20200620100630340.png)
+
+可以很明显的看出来，$field1是指向下一个同为根引用的指针。
+
+
+
 ###### 核心代码：copy
 
 ```c++
 copying(){
     scan = $free = $to_start 
+    // 先复制root引用，让free指针位于scan指针前
     for(r : $roots)
         *r = copy(*r)
 		
-		// scan用于搜索已复制到to空间对象的指针
-		// free是前倾指针，用于标识头部
-    // scan和free都是to空间的指针
+		
     while(scan != $free) 
-        for(child : children(scan))
+        // 从已复制的对象开始遍历搜索
+      	// 每次搜索一个块: 只会搜索A 然后下次搜索B 不会搜索A+部分B
+        for(child : currentBlock)
             *child = copy(*child) 
-        scan += children(scan).size
-    
+        
+        // 搜索下一个块：如之前搜索A，下次就搜索B
+        scan += currentBlock.size
+ 
+    // 复制后空间交换
     swap($from_start, $to_start)
 }
 
 copy(obj){
-    // scan catch up $free ? true : false
+    // params1 is equal params2
     if(is_pointer_to_heap(obj.forwarding, $to_start) == FALSE)
         copy_data($free, obj, obj.size) 
         obj.forwarding = $free
         $free += obj.size
     return obj.forwarding
 }
+
+// 对于is_pointer_to_heap(obj.forwarding, $to_start)，如果 obj.forwarding 是指向To空间的指针则返回TRUE，如果不是(即非指针或指向From空间的指针)则返回FALSE。 
 ```
+
+在说`Scan`和`Free`两个神奇的指针之前，先看看我们的`is_pointer_to_heap`
+
+这个函数实际上是检查`obj`是否已经复制完毕，如果复制完毕，那么`obj.forwarding`指向的是to空间里的内容
+
+
 
 ![img](https://sakura-1252236262.cos.ap-beijing.myqcloud.com/2018-08-31-163100.png)
 
@@ -267,7 +295,7 @@ copy(obj){
 ```c++
 void write_barrier($obj,field,newField) {
   // obj是否是老生代对象，newField是否是新生代对象，obj是否存在于记录集
-  if($obj >= $oldStart && newField <= $oldStart && $obj.ismemorable = false) {
+  if($obj >= $oldStart && newField <= $oldStart && $obj.ismemorable == false) {
     addMemorableSet($old)
     $obj.ismemorable = true
   }

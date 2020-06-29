@@ -61,3 +61,83 @@ export function enqueueUpdate<State>(fiber: Fiber, update: Update<State>) {
   }
 ```
 
+
+
+## BatchUpdateStrategy
+
+
+
+
+
+## updateQueue
+
+```javascript
+export function createUpdateQueue<State>(baseState: State): UpdateQueue<State> {
+  const queue: UpdateQueue<State> = {
+    baseState,
+    firstUpdate: null,
+    lastUpdate: null,
+    firstCapturedUpdate: null,
+    lastCapturedUpdate: null,
+    firstEffect: null,
+    lastEffect: null,
+    firstCapturedEffect: null,
+    lastCapturedEffect: null,
+  };
+  return queue;
+}
+```
+
+可以看到，effect/update都是被储存在一个更新队列来执行的。
+
+
+
+
+
+## batchUpdate
+
+### React15 Transaction式
+
+```js
+/**
+ * <pre>
+ *                       wrappers (injected at creation time)
+ *                                      +        +
+ *                                      |        |
+ *                    +-----------------|--------|--------------+
+ *                    |                 v        |              |
+ *                    |      +---------------+   |              |
+ *                    |   +--|    wrapper1   |---|----+         |
+ *                    |   |  +---------------+   v    |         |
+ *                    |   |          +-------------+  |         |
+ *                    |   |     +----|   wrapper2  |--------+   |
+ *                    |   |     |    +-------------+  |     |   |
+ *                    |   |     |                     |     |   |
+ *                    |   v     v                     v     v   | wrapper
+ *                    | +---+ +---+   +---------+   +---+ +---+ | invariants
+ * perform(anyMethod) | |   | |   |   |         |   |   | |   | | maintained
+ * +----------------->|-|---|-|---|-->|anyMethod|---|---|-|---|-|-------->
+ *                    | |   | |   |   |         |   |   | |   | |
+ *                    | |   | |   |   |         |   |   | |   | |
+ *                    | |   | |   |   |         |   |   | |   | |
+ *                    | +---+ +---+   +---------+   +---+ +---+ |
+ *                    |  initialize                    close    |
+ *                    +-----------------------------------------+
+ * </pre>
+ *
+*/
+```
+
+这幅被引用广泛的图其实很有意思，跟`mopx`的思想非常一致，利用`transaction`注入的`wrapper n`环境来实现一些控制
+
+`wrapper1 initialize -> wrapper2 initialize -> anyMethod -> w1 close -> w2 close`
+
+这个`wrapper`就是在react预设的环境被执行时添加的，比如事件系统
+
+
+
+### React16 env + expirationTime式
+
+在React16里，也通过react构造好的环境(`legacy-event batchupdates`)来创造一个环境
+
+并在performWork里进行一些`expiration`的条件判断来验证是否在环境中
