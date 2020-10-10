@@ -12,6 +12,8 @@ kafka的写入过程
 
 我们在写入磁盘时，需要先写入内存，即page Cache，然后再由操作系统决定写入磁盘的时机
 
+其实，page cache是在disk cache和memory cache之间的一层。
+
 
 
 [基础](https://tech.meituan.com/2017/05/19/about-desk-io.html)

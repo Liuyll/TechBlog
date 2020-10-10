@@ -105,6 +105,33 @@ v5版本有了一个全新的功能，版本锁:`package-lock.json`
 
 
 
+#### 缓存
+
+v5重写了缓存策略
+
+##### 缓存策略
+
+.npm会缓存每一个install下来的包，在install时会走以下逻辑
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2020042513384724.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2RhaWhhb3hpbg==,size_16,color_FFFFFF,t_70)
+
+v5后，直接使用install --offline强制使用缓存
+
+##### 缓存结构
+
+
+
+![image-20200912122445810](/Users/liuyl/Library/Application Support/typora-user-images/image-20200912122445810.png)
+
+上面是npm的缓存目录
+
++ content-v2 一堆二进制文件，可以解压为需要的package
++ Index-v5 描述性文件，对content-v2里内容的索引
+
+
+
+
+
 > 引用：
 >
 > [npm 如何处理依赖与依赖冲突](http://git.code.oa.com/rn-plus/rn-plus-px2rem.git )_

@@ -1,6 +1,6 @@
 ###SSL校验过程
 
->  一图胜千言！
+我们先概述一下SSL的校验过程(这只是一个非常简略的图，我们旨在讨论实现细节)
 
 ![image](https://img-blog.csdn.net/20160310160503593)
 #### 注意：
@@ -21,6 +21,41 @@
 
 
 ### 技术细节
+
+#### 对称加密秘钥是如何协商来的
+
+准确的说，不同版本的TLS，对称加密秘钥生成的方法不同。
+
+##### RSA
+
+最简单的方法是通过RSA，利用RSA的公钥来加密。步骤如下：
+
+1. client hello 此时客户端发送一个random(random1)
+2. server hello 此时服务端发送一个random(random2)
+3. client 生成一个premaster key(random3)
+4. client server公钥加密premaster key
+5. server 利用私钥解密得到premaster key，并通过random{1,2,3} 生成master screat，此作为对称秘钥进行传输
+
+
+
+##### DH+RSA
+
+这是一种复杂的秘钥协商方式，通过DH来进行秘钥交换，RSA来签名秘钥，确保不被中间人攻击(中间人分别对两方进行秘钥交换)
+
+步骤如下：
+
+1. client发送大素数P和本原根
+2. client和server分别选择一个数，记为x,y(此数整个通信过程不发送)
+3. client计算并发送g^x mod P
+4. server计算并发送g^y mod P
+5. client和server分别以g^y(x) mod P作为底数 y,x
+6. 最后的秘钥为g^xy mod P
+
+
+
+每次session，g和P都是不同的。所以每次session都不依赖于其他秘钥，是完美的前向安全。
+
+
 
 #### 第三步是怎么验证证书合法性的？
 

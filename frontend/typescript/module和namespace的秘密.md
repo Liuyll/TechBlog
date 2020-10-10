@@ -10,7 +10,41 @@ import * as A from 'A'
 
 我们同时默认引入了`A`这个`module`到当前模块里来。
 
+####扩展模块
 
+上面提到了文件即模块，所以每个文件作为导出时就是一个默认模块。我们可以在其他文件里扩充它
+
+```
+// A.ts
+class A {}
+export default A
+```
+
+```
+// B.ts
+import A from 'A'
+declare module 'A' {
+	interface A {
+		...
+	}
+}
+```
+
+这样可以动态的扩充A的实例属性里`class A`
+
+同理，也可以扩展它的静态属性
+
+```
+declare module 'A' {
+	namespace A {
+		let z:number;
+	}
+}
+```
+
+唯一需要注意的是，必须先通过`import `来表示需要扩展模块。
+
+如果直接`declare module 'xx'`这会新建一个模块
 
 #### 模块中模块
 
@@ -24,11 +58,13 @@ export module AO {}
 
 这样我们就能引入AO模块了
 
+不过我们希望用namespace来表示在文件里的代码分割，模块只作为一个且唯一一个向外暴露。
+
 
 
 ## namesapce
 
-与module不同的是，一个`class`也可以是一个`module`
+实际上，namespace除了不能作为一个文件以外。它的用法与module并没有任何区别
 
 
 
